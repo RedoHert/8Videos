@@ -109,7 +109,7 @@
             flex-wrap: wrap;
             justify-content: flex-start;
             gap: 20px;
-            padding: 0 20px; /* Adicionado para espaçamento lateral */
+            padding: 0 20px; 
         }
 
         .video-item {
@@ -146,10 +146,10 @@
             background-color: #444;
         }
         .login-container {
-            display: block; /* Inicia visível */
+            display: block;
         }
         .site-container {
-            display: none; /* Inicia oculto */
+            display: none;
         }
     </style>
 </head>
@@ -199,16 +199,74 @@
 
         var storage = firebase.storage();
         var database = firebase.database();
+        function loadVideos() {
+    database.ref('videos').once('value', function(snapshot) {
+        snapshot.forEach(function(childSnapshot) {
+            var videoData = childSnapshot.val();
+            var videoKey = childSnapshot.key;
+            var videoContainer = document.getElementById('videoContainer');
+
+            var videoItem = document.createElement('div');
+            videoItem.classList.add('video-item');
+            videoItem.setAttribute('data-key', videoKey);
+
+            var video = document.createElement('video');
+            video.src = videoData.url;
+            video.controls = true;
+            videoItem.appendChild(video);
+
+            var title = document.createElement('h3');
+            title.textContent = videoData.title;
+            videoItem.appendChild(title);
+
+          
+            var deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Deletar';
+            deleteButton.classList.add('deleteButton');
+            videoItem.appendChild(deleteButton);
+
+           
+            deleteButton.addEventListener('click', function() {
+                var videoKey = videoItem.getAttribute('data-key');
+                if (confirm('Tem certeza que deseja deletar o vídeo?')) {
+                    database.ref('videos/' + videoKey).remove()
+                    .then(function() {
+                        console.log('Vídeo deletado com sucesso');
+                        videoItem.remove();
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao deletar vídeo:', error);
+                    });
+                }
+            });
+
+            var watchButton = document.createElement('button');
+            watchButton.textContent = 'Ver Vídeo';
+            watchButton.addEventListener('click', function() {
+                database.ref('currentVideo').set({
+                    url: video.src
+                }).then(function() {
+                    window.location.href = 'video.html';
+                });
+            });
+            videoItem.appendChild(watchButton);
+
+            videoContainer.appendChild(videoItem);
+        });
+    });
+}
 
         firebase.auth().onAuthStateChanged(function(user) {
-            if (user) {
-                document.querySelector('.login-container').style.display = 'none';
-                document.querySelector('.site-container').style.display = 'block';
-            } else {
-                document.querySelector('.login-container').style.display = 'block';
-                document.querySelector('.site-container').style.display = 'none';
-            }
-        });
+        if (user) {
+            document.querySelector('.login-container').style.display = 'none';
+            document.querySelector('.site-container').style.display = 'block';
+            loadVideos();
+        } else {
+            document.querySelector('.login-container').style.display = 'block';
+            document.querySelector('.site-container').style.display = 'none';
+        }
+    });
+
 
         document.getElementById('loginButton').addEventListener('click', function() {
             var username = document.getElementById('usernameInput').value;
@@ -259,16 +317,17 @@
     storageRef.put(file).then(function(snapshot) {
         console.log('Uploaded a blob or file!');
         snapshot.ref.getDownloadURL().then(function(downloadURL) {
-            // Salvar a URL do vídeo e o título no Firebase Database
             database.ref('videos').push({
                 title: videoTitle,
                 url: downloadURL
             });
 
+
+
             var videoContainer = document.getElementById('videoContainer');
             var videoItem = document.createElement('div');
             videoItem.classList.add('video-item');
-            videoItem.setAttribute('data-key', snapshot.key); // Adicione isso
+            videoItem.setAttribute('data-key', snapshot.key);
             var video = document.createElement('video');
             video.src = downloadURL;
             video.controls = true;
@@ -277,14 +336,14 @@
             title.textContent = videoTitle;
             videoItem.appendChild(title);
 
-            // Botão de deletar
+    
             var deleteButton = document.createElement('button');
             deleteButton.textContent = 'Deletar';
             deleteButton.classList.add('deleteButton');
             videoItem.appendChild(deleteButton);
 
 
-            // Botão "Ver Vídeo"
+          
             var watchButton = document.createElement('button');
             watchButton.textContent = 'Ver Vídeo';
             watchButton.addEventListener('click', function() {
@@ -298,6 +357,10 @@
             videoItem.appendChild(watchButton);
 
             videoContainer.appendChild(videoItem);
+            
+            
+
+
             document.addEventListener('click', function(event) {
                 if (event.target.classList.contains('deleteButton')) {
                     var videoItem = event.target.closest('.video-item');
@@ -332,8 +395,8 @@
                     video.style.display = 'none';
                 }
             });
-
-            // Remover e adicionar os elementos no DOM para manter a ordem original
+            
+            
             var videoContainer = document.getElementById('videoContainer');
             videos.forEach(function(video) {
                 videoContainer.removeChild(video);
