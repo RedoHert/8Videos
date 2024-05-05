@@ -176,6 +176,8 @@
             <input type="file" id="fileInput">
             <input type="text" id="videoTitle" placeholder="Título do vídeo">
             <button id="uploadButton">Upload</button>
+            <img src="loading.gif" id="loadingGif" style="display: none;">
+
         </div>
         <hr>
         <h2 class="searchbar">Pesquisar</h2>
@@ -202,75 +204,74 @@
         var storage = firebase.storage();
         var database = firebase.database();
         function loadVideos() {
+    var videoContainer = document.getElementById('videoContainer');
+
     database.ref('videos').once('value', function(snapshot) {
         snapshot.forEach(function(childSnapshot) {
             var videoData = childSnapshot.val();
             var videoKey = childSnapshot.key;
-            var videoContainer = document.getElementById('videoContainer');
-            
-            var videoItem = document.createElement('div');
-            videoItem.classList.add('video-item');
-            videoItem.setAttribute('data-key', videoKey);
-            videoItem.setAttribute('data-userid', videoData.userId);
 
-            var video = document.createElement('video');
-            video.src = videoData.url;
-            video.controls = true;
-            videoItem.appendChild(video);
+            if (!document.querySelector(`.video-item[data-key="${videoKey}"]`)) {
+                var videoItem = document.createElement('div');
+                videoItem.classList.add('video-item');
+                videoItem.setAttribute('data-key', videoKey);
+                videoItem.setAttribute('data-userid', videoData.userId);
 
-            var title = document.createElement('h3');
-            title.textContent = videoData.title;
-            videoItem.appendChild(title);
+                var video = document.createElement('video');
+                video.src = videoData.url;
+                video.controls = true;
+                videoItem.appendChild(video);
 
-            var user = document.createElement('p');
-            user.textContent = "Por: " + videoData.username;
-            videoItem.appendChild(user);
+                var title = document.createElement('h3');
+                title.textContent = videoData.title;
+                videoItem.appendChild(title);
 
+                var user = document.createElement('p');
+                user.textContent = "Por: " + videoData.username;
+                videoItem.appendChild(user);
 
+                var deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Deletar';
+                deleteButton.classList.add('deleteButton');
+                videoItem.appendChild(deleteButton);
 
-          
-            var deleteButton = document.createElement('button');
-            deleteButton.textContent = 'Deletar';
-            deleteButton.classList.add('deleteButton');
-            videoItem.appendChild(deleteButton);
-
-           
-         
-            deleteButton.addEventListener('click', function() {
-                var videoKey = videoItem.getAttribute('data-key');
-                var userId = videoItem.getAttribute('data-userid');
-                var currentUser = firebase.auth().currentUser;
-                if (currentUser && currentUser.uid === userId) {
-                    if (confirm('Tem certeza que deseja deletar o vídeo?')) {
-                        database.ref('videos/' + videoKey).remove()
-                        .then(function() {
-                            console.log('Vídeo deletado com sucesso');
-                            videoItem.remove();
-                        })
-                        .catch(function(error) {
-                            console.error('Erro ao deletar vídeo:', error);
-                        });
+                deleteButton.addEventListener('click', function() {
+                    var videoKey = videoItem.getAttribute('data-key');
+                    var userId = videoItem.getAttribute('data-userid');
+                    var currentUser = firebase.auth().currentUser;
+                    if (currentUser && currentUser.uid === userId) {
+                        if (confirm('Tem certeza que deseja deletar o vídeo?')) {
+                            database.ref('videos/' + videoKey).remove()
+                            .then(function() {
+                                console.log('Vídeo deletado com sucesso');
+                                videoItem.remove();
+                            })
+                            .catch(function(error) {
+                                console.error('Erro ao deletar vídeo:', error);
+                            });
+                        }
+                    } else {
+                        alert('Você não tem permissão para deletar este vídeo.');
                     }
-                } else {
-                    alert('Você não tem permissão para deletar este vídeo.');
-                }
-            });
-
-            var watchButton = document.createElement('button');
-            watchButton.textContent = 'Ver Vídeo';
-            watchButton.addEventListener('click', function() {
-                database.ref('currentVideo').set({
-                    url: video.src
-                }).then(function() {
-                    window.location.href = 'video.html';
                 });
-            });
-            videoItem.appendChild(watchButton);
 
-            videoContainer.appendChild(videoItem);
+                var watchButton = document.createElement('button');
+                watchButton.textContent = 'Ver Vídeo';
+                watchButton.addEventListener('click', function() {
+                    database.ref('currentVideo').set({
+                        url: video.src
+                    }).then(function() {
+                        window.location.href = 'video.html';
+                    });
+                });
+                videoItem.appendChild(watchButton);
+
+                videoContainer.appendChild(videoItem);
+            }
         });
     });
 }
+
 
         firebase.auth().onAuthStateChanged(function(user) {
             if (user) {
@@ -328,44 +329,55 @@
 
 
         document.getElementById('uploadButton').addEventListener('click', function() {
-            var fileInput = document.getElementById('fileInput');
-            var file = fileInput.files[0];
-            if (!file || !file.type.startsWith('video/')) {
-                alert('Selecione um arquivo de vídeo válido');
-                return;
-            }
+    var fileInput = document.getElementById('fileInput');
+    var file = fileInput.files[0];
+    if (!file || !file.type.startsWith('video/')) {
+        alert('Selecione um arquivo de vídeo válido');
+        return;
+    }
 
-            var videoTitle = document.getElementById('videoTitle').value;
-            if (!videoTitle) {
-                alert('Por favor, adicione um título para o vídeo');
-                return;
-            }
+    var videoTitle = document.getElementById('videoTitle').value;
+    if (!videoTitle) {
+        alert('Por favor, adicione um título para o vídeo');
+        return;
+    }
 
-            var user = firebase.auth().currentUser;
-            if (!user) {
-                alert('Faça login para postar vídeos');
-                return;
-            }
-            var username = user.email.split('@')[0];
+    var user = firebase.auth().currentUser;
+    if (!user) {
+        alert('Faça login para postar vídeos');
+        return;
+    }
+    var username = user.email.split('@')[0];
 
-            var storageRef = storage.ref('videos/' + file.name);
-            storageRef.put(file).then(function(snapshot) {
-                console.log('Uploaded a blob or file!');
-                snapshot.ref.getDownloadURL().then(function(downloadURL) {
-                    database.ref('videos').push({
-                        title: videoTitle,
-                        url: downloadURL,
-                        username: username,
-                        userId: user.uid 
-                    }).then(function() {
-                        console.log('Vídeo adicionado com sucesso');
-                        loadVideos(); 
-                    }).catch(function(error) {
-                        console.error('Erro ao adicionar vídeo:', error);
-                    });
-                });
+    var storageRef = storage.ref('videos/' + file.name);
+    document.getElementById('uploadButton').disabled = true;
+    document.getElementById('uploadButton').textContent = 'Carregando...';
+    document.getElementById('loadingGif').style.display = 'inline';
+
+    storageRef.put(file).then(function(snapshot) {
+        console.log('Uploaded a blob or file!');
+        snapshot.ref.getDownloadURL().then(function(downloadURL) {
+            database.ref('videos').push({
+                title: videoTitle,
+                url: downloadURL,
+                username: username,
+                userId: user.uid 
+            }).then(function() {
+                console.log('Vídeo adicionado com sucesso');
+                loadVideos();
+                document.getElementById('uploadButton').disabled = false;
+                document.getElementById('uploadButton').textContent = 'Upload';
+                document.getElementById('loadingGif').style.display = 'none';
+                document.getElementById('videoTitle').value = '';
+            }).catch(function(error) {
+                console.error('Erro ao adicionar vídeo:', error);
+                document.getElementById('uploadButton').disabled = false;
+                document.getElementById('uploadButton').textContent = 'Upload';
+                document.getElementById('loadingGif').style.display = 'none';
             });
         });
+    });
+});
 
 document.addEventListener('click', function(event) {
     if (event.target.classList.contains('deleteButton')) {
