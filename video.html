@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyVideo - Vídeo</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            margin: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        #videoPlayer {
+            width: 80%;
+            max-width: 800px;
+            height: auto;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        #likeCount,
+        #dislikeCount {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        div {
+            margin-top: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 400px;
+            padding: 5px;
+            margin-top: 10px;
+        }
+
+        #commentButton {
+            margin-top: 10px;
+        }
+
+        #commentsContainer {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+
+        a {
+            margin-top: 20px;
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+
+        a:hover {
+            color: #444;
+            border-bottom-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vídeo</h1>
+    <video id="videoPlayer" controls></video>
+    <div>
+        <button id="likeButton" onclick="handleLike()">Like</button>
+        <span id="likeCount">0</span>
+        <button id="dislikeButton" onclick="handleDislike()">Dislike</button>
+        <span id="dislikeCount">0</span>
+    </div>
+    <div>
+        <textarea id="commentInput" placeholder="Adicione um comentário"></textarea>
+        <button id="commentButton" onclick="handleComment()">Comentar</button>
+    </div>
+    <div id="commentsContainer"></div>
+    <a href="index.html">Voltar para a página principal</a>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyDUqhesILA75onkpvUJOz_IYSrj1OhIpUM",
+            authDomain: "myvideo-17870.firebaseapp.com",
+            projectId: "myvideo-17870",
+            storageBucket: "myvideo-17870.appspot.com",
+            messagingSenderId: "808646032247",
+            appId: "1:808646032247:web:60add14528970aabcd3f72"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        var database = firebase.database();
+        database.ref('currentVideo').once('value', function(snapshot) {
+            var videoUrl = snapshot.val().url;
+            var videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.src = videoUrl;
+        });
+
+
+        var likeCount = 0;
+        var dislikeCount = 0;
+        var likeCountElement = document.getElementById('likeCount');
+        var dislikeCountElement = document.getElementById('dislikeCount');
+        var likeButton = document.getElementById('likeButton');
+        var dislikeButton = document.getElementById('dislikeButton');
+        var commentInput = document.getElementById('commentInput');
+        var commentsContainer = document.getElementById('commentsContainer');
+
+        var liked = false;
+        var disliked = false;
+
+        function handleLike() {
+            if (!liked) {
+                likeCount++;
+                likeCountElement.textContent = likeCount;
+                liked = true;
+
+                if (disliked) {
+                    dislikeCount--;
+                    dislikeCountElement.textContent = dislikeCount;
+                    disliked = false;
+                }
+
+                // Salvar o like no Firebase
+                database.ref('videos/' + videoUrl + '/likes').set(likeCount);
+            } else {
+                likeCount--;
+                likeCountElement.textContent = likeCount;
+                liked = false;
+
+                // Remover o like do Firebase
+                database.ref('videos/' + videoUrl + '/likes').set(likeCount);
+            }
+        }
+
+        function handleDislike() {
+            if (!disliked) {
+                dislikeCount++;
+                dislikeCountElement.textContent = dislikeCount;
+                disliked = true;
+
+                if (liked) {
+                    likeCount--;
+                    likeCountElement.textContent = likeCount;
+                    liked = false;
+                }
+
+                // Salvar o dislike no Firebase
+                database.ref('videos/' + videoUrl + '/dislikes').set(dislikeCount);
+            } else {
+                dislikeCount--;
+                dislikeCountElement.textContent = dislikeCount;
+                disliked = false;
+
+                // Remover o dislike do Firebase
+                database.ref('videos/' + videoUrl + '/dislikes').set(dislikeCount);
+            }
+        }
+
+function handleComment() {
+    var commentText = commentInput.value;
+
+    // Salvar o comentário no Firebase
+    database.ref('videos/' + videoUrl + '/comments').push({
+        text: commentText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    var commentElement = document.createElement('div');
+    commentElement.textContent = commentText;
+    commentsContainer.appendChild(commentElement);
+    commentInput.value = '';
+}
+
+        function handleComment() {
+            var commentText = commentInput.value;
+            var commentElement = document.createElement('div');
+            commentElement.textContent = commentText;
+            commentsContainer.appendChild(commentElement);
+            commentInput.value = '';
+        }
+    </script>
+</body>
+</html>

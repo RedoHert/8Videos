@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyVideo</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        h1, h2, h3, h4 {
+            margin: 0;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        h1 {
+            background-color: #333;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            background-color: #444;
+            color: #fff;
+        }
+
+        h3 {
+            margin-bottom: 5px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #ccc;
+            margin: 10px 0;
+        }
+
+        
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .form-container input,
+        .form-container button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .form-container button {
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .form-container button:hover {
+            background-color: #444;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .search-container input {
+            margin-right: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .search-container button {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .search-container button:hover {
+            background-color: #444;
+        }
+
+        #videoContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 20px;
+            padding: 0 20px; /* Adicionado para espaçamento lateral */
+        }
+
+        .video-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .video-item video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .video-item h3 {
+            margin-top: 10px;
+        }
+
+        .video-item button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        .video-item button:hover {
+            background-color: #444;
+        }
+        .login-container {
+            display: block; /* Inicia visível */
+        }
+        .site-container {
+            display: none; /* Inicia oculto */
+        }
+    </style>
+</head>
+<body>
+    <h1>MyVideo</h1>
+    <h4>Neste site você pode publicar vídeos e interagir com o vídeo de outras pessoas!</h4>
+    <hr>
+    <h2>Publicar</h2>
+    <div class="login-container">
+        <div class="form-container">
+            <input type="text" id="usernameInput" placeholder="Nome de Usuário">
+            <input type="password" id="passwordInput" placeholder="Senha">
+            <button id="loginButton">Login</button>
+            <button id="registerButton">Registrar</button>
+        </div>
+    </div>
+
+    <!-- Tela do Site -->
+    <div class="site-container">
+        <div class="form-container">
+            <label for="fileInput">Publicar vídeo:</label>
+            <input type="file" id="fileInput">
+            <input type="text" id="videoTitle" placeholder="Título do vídeo">
+            <button id="uploadButton">Upload</button>
+        </div>
+        <hr>
+        <h2 class="searchbar">Pesquisar</h2>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Pesquisar vídeos">
+            <button id="searchButton">Pesquisar</button>
+        </div>
+        <hr>
+        <h2>Assistir</h2>
+        <div id="videoContainer" class="grid-container"></div>
+    </div>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyDUqhesILA75onkpvUJOz_IYSrj1OhIpUM",
+            authDomain: "myvideo-17870.firebaseapp.com",
+            projectId: "myvideo-17870",
+            storageBucket: "myvideo-17870.appspot.com",
+            messagingSenderId: "808646032247",
+            appId: "1:808646032247:web:60add14528970aabcd3f72"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        var storage = firebase.storage();
+        var database = firebase.database();
+
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                document.querySelector('.login-container').style.display = 'none';
+                document.querySelector('.site-container').style.display = 'block';
+            } else {
+                document.querySelector('.login-container').style.display = 'block';
+                document.querySelector('.site-container').style.display = 'none';
+            }
+        });
+
+        document.getElementById('loginButton').addEventListener('click', function() {
+            var username = document.getElementById('usernameInput').value;
+            var password = document.getElementById('passwordInput').value;
+
+            firebase.auth().signInWithEmailAndPassword(username + '@example.com', password)
+            .then((userCredential) => {
+                console.log("Usuário autenticado:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                var errorCode = error.code;
+                var errorMessage = error.message;
+                console.error("Erro ao autenticar:", errorCode, errorMessage);
+            });
+        });
+
+        document.getElementById('registerButton').addEventListener('click', function() {
+            var username = document.getElementById('usernameInput').value;
+            var password = document.getElementById('passwordInput').value;
+
+            firebase.auth().createUserWithEmailAndPassword(username + '@example.com', password)
+            .then((userCredential) => {
+                console.log("Usuário registrado:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                var errorCode = error.code;
+                var errorMessage = error.message;
+                console.error("Erro ao registrar:", errorCode, errorMessage);
+            });
+        });
+
+
+    document.getElementById('uploadButton').addEventListener('click', function() {
+    var fileInput = document.getElementById('fileInput');
+    var file = fileInput.files[0];
+    if (!file || !file.type.startsWith('video/')) {
+        alert('Selecione um arquivo de vídeo válido');
+        return;
+    }
+
+    var videoTitle = document.getElementById('videoTitle').value;
+    if (!videoTitle) {
+        alert('Por favor, adicione um título para o vídeo');
+        return;
+    }
+
+    var storageRef = storage.ref('videos/' + file.name);
+    storageRef.put(file).then(function(snapshot) {
+        console.log('Uploaded a blob or file!');
+        snapshot.ref.getDownloadURL().then(function(downloadURL) {
+            // Salvar a URL do vídeo e o título no Firebase Database
+            database.ref('videos').push({
+                title: videoTitle,
+                url: downloadURL
+            });
+
+            var videoContainer = document.getElementById('videoContainer');
+            var videoItem = document.createElement('div');
+            videoItem.classList.add('video-item');
+            videoItem.setAttribute('data-key', snapshot.key); // Adicione isso
+            var video = document.createElement('video');
+            video.src = downloadURL;
+            video.controls = true;
+            videoItem.appendChild(video);
+            var title = document.createElement('h3');
+            title.textContent = videoTitle;
+            videoItem.appendChild(title);
+
+            // Botão de deletar
+            var deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Deletar';
+            deleteButton.classList.add('deleteButton');
+            videoItem.appendChild(deleteButton);
+
+
+            // Botão "Ver Vídeo"
+            var watchButton = document.createElement('button');
+            watchButton.textContent = 'Ver Vídeo';
+            watchButton.addEventListener('click', function() {
+                database.ref('currentVideo').set({
+                    url: video.src
+                }).then(function() {
+                    window.location.href = 'video.html';
+                });
+            });
+
+            videoItem.appendChild(watchButton);
+
+            videoContainer.appendChild(videoItem);
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('deleteButton')) {
+                    var videoItem = event.target.closest('.video-item');
+                    var videoKey = videoItem.getAttribute('data-key');
+                    if (confirm('Tem certeza que deseja deletar o vídeo?')) {
+                        database.ref('videos/' + videoKey).remove()
+                        .then(function() {
+                            console.log('Vídeo deletado com sucesso');
+                            videoItem.remove();
+                        })
+                        .catch(function(error) {
+                            console.error('Erro ao deletar vídeo:', error);
+                        });
+                    }
+                }
+            });
+
+        });
+    });
+});
+
+
+
+        document.getElementById('searchButton').addEventListener('click', function() {
+            var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            var videos = document.querySelectorAll('.video-item');
+            videos.forEach(function(video) {
+                var title = video.querySelector('h3').textContent.toLowerCase();
+                if (title.includes(searchTerm) || searchTerm === '') {
+                    video.style.display = 'block';
+                } else {
+                    video.style.display = 'none';
+                }
+            });
+
+            // Remover e adicionar os elementos no DOM para manter a ordem original
+            var videoContainer = document.getElementById('videoContainer');
+            videos.forEach(function(video) {
+                videoContainer.removeChild(video);
+            });
+            videos.forEach(function(video) {
+                videoContainer.appendChild(video);
+            });
+        });
+    </script>
+</body>
+</html>
