@@ -18,8 +18,8 @@
             padding: 0;
         }
 
-        h1 {
-            background-color: #333;
+        .top {
+            background: linear-gradient(to right, cornflowerblue, purple);
             color: #fff;
             padding: 10px 20px;
             margin: 0;
@@ -90,18 +90,13 @@
     </style>
 </head>
 <body>
-    <h1>Vídeo</h1>
+    <div class="top">
+        <img src="icon.png" height="50" width="50">
+        <h1>8Videos</h1>
+    </div>
     <video id="videoPlayer" controls></video>
-    <div>
-        <button id="likeButton" onclick="handleLike()">Like</button>
-        <span id="likeCount">0</span>
-        <button id="dislikeButton" onclick="handleDislike()">Dislike</button>
-        <span id="dislikeCount">0</span>
-    </div>
-    <div>
-        <textarea id="commentInput" placeholder="Adicione um comentário"></textarea>
-        <button id="commentButton" onclick="handleComment()">Comentar</button>
-    </div>
+    
+    
     <div id="commentsContainer"></div>
     <a href="index.html">Voltar para a página principal</a>
 
