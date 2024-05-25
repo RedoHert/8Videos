@@ -194,7 +194,7 @@
         </div>
     </div>
     <hr>
-    <h2>Publicar</h2>
+    <h2 id="publicarTitle">Publicar</h2>
     <div class="login-container">
         <div class="form-container">
             <input type="text" id="usernameInput" placeholder="Nome de Usuário">
@@ -316,20 +316,27 @@
 }
 
 
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (user) {
-                document.querySelector('.login-container').style.display = 'none';
-                document.querySelector('.site-container').style.display = 'block';
-                var username = user.email.split('@')[0];
-                document.getElementById('userDisplay').innerText = 'Logado como: ' + username;
-                document.getElementById('userDisplay').style.display = 'block';
-                loadVideos();
-            } else {
-                document.querySelector('.login-container').style.display = 'block';
-                document.querySelector('.site-container').style.display = 'none';
-                document.getElementById('userDisplay').style.display = 'none';
-            }
-        });
+firebase.auth().onAuthStateChanged(function(user) {
+    var publicarTitle = document.getElementById('publicarTitle');
+    var siteContainer = document.querySelector('.site-container');
+    var loginContainer = document.querySelector('.login-container');
+    var userDisplay = document.getElementById('userDisplay');
+    
+    if (user) {
+        publicarTitle.style.display = 'block';
+        loginContainer.style.display = 'none';
+        siteContainer.style.display = 'block';
+        userDisplay.style.display = 'block';
+        userDisplay.textContent = 'Logado como: ' + user.email.split('@')[0];
+
+        loadVideos();
+    } else {
+        publicarTitle.style.display = 'none';
+        loginContainer.style.display = 'block';
+        siteContainer.style.display = 'none';
+        userDisplay.style.display = 'none';
+    }
+});
 
 
 
