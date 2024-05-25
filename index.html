@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyVideo</title>
+    <title>8Videos</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -23,17 +23,22 @@
             padding: 10px 0;
             text-align: center;
         }
-
-        h1 {
-            background-color: #333;
+        h2{
+            background-image: linear-gradient(to right, purple,cornflowerblue);
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .top {
+            background: linear-gradient(to right, cornflowerblue, purple);
             color: #fff;
             margin-bottom: 20px;
         }
-
-        h2 {
-            background-color: #444;
-            color: #fff;
+        .top img{
+            display: block;
+            margin: 0 auto;
         }
+
+        
 
         h3 {
             margin-bottom: 5px;
@@ -66,7 +71,7 @@
         }
 
         .form-container button {
-            background-color: #333;
+            background: linear-gradient(to right, #fd5c63, pink); ;
             color: #fff;
             cursor: pointer;
         }
@@ -88,14 +93,14 @@
             margin-right: 10px;
             padding: 5px 10px;
             border: 1px solid #ccc;
-            border-radius: 3px;
+            border-radius: 10px;
         }
 
         .search-container button {
             padding: 5px 10px;
             border: 1px solid #ccc;
             border-radius: 3px;
-            background-color: #333;
+            background: linear-gradient(to right, cornflowerblue, pink);;
             color: #fff;
             cursor: pointer;
         }
@@ -138,7 +143,7 @@
             padding: 5px 10px;
             border: 1px solid #ccc;
             border-radius: 3px;
-            background-color: #333;
+            background-color: cornflowerblue;
             color: #fff;
             cursor: pointer;
         }
@@ -151,11 +156,43 @@
         .site-container {
             display: none;
         }
+        .logoutbtn{
+            border: none;
+            background-color: #fd5c63;
+            border-radius: 5px;
+            height: 30px;
+            color: white;
+        }
+        .logoutbtn:hover{
+            background-color: brown;
+        }
+        .menu{
+            background-color: #fd5c63;
+            padding: 15px;
+        }
+        .menu a{
+            text-decoration: none;
+            color: white;
+            padding: 5px;
+            display: flex;
+            justify-content: center;
+            width: 5%;
+            margin: 0 auto;
+        }
+        .menu a:hover{
+            background-color: brown;
+        }
     </style>
 </head>
 <body>
-    <h1>MyVideo</h1>
-    <h4>Neste site você pode publicar vídeos e interagir com o vídeo de outras pessoas!</h4>
+    <div class="top">
+        <button class="logoutbtn" id="logoutButton">Deslogar</button>
+        <img src="icon.png" height="50" width="50">
+        <h1>8Videos</h1>
+        <div class="menu">
+            <a href="info.html">Info</a>
+        </div>
+    </div>
     <hr>
     <h2>Publicar</h2>
     <div class="login-container">
@@ -164,6 +201,10 @@
             <input type="password" id="passwordInput" placeholder="Senha">
             <button id="loginButton">Login</button>
             <button id="registerButton">Registrar</button>
+            <p id="passwordError" style="color: red; display: none;"></p>
+            <div id="errorContainer" style="color: red; text-align: center; margin-bottom: 10px; display: none;">Senha incorreta. Tente novamente.</div>
+            <div id="registerErrorContainer" style="color: red; text-align: center; margin-bottom: 10px; display: none;">Usuário já em uso. Escolha outro usuário.</div>
+
         </div>
     </div>
 
@@ -173,20 +214,22 @@
 
         <div class="form-container">
             <label for="fileInput">Publicar vídeo:</label>
-            <input type="file" id="fileInput">
-            <input type="text" id="videoTitle" placeholder="Título do vídeo">
+            <input class="uploadfile" type="file" id="fileInput">
+            <input style="border-radius: 10px;" type="text" id="videoTitle" placeholder="Título do vídeo">
             <button id="uploadButton">Upload</button>
             <img src="loading.gif" id="loadingGif" height="35" width="35" style="display: none;">
 
         </div>
         <hr>
-        <h2 class="searchbar">Pesquisar</h2>
+       
+        
+        <hr>
+        <h2>Assistir</h2>
+        <h4 class="searchbar">Pesquisar</h4>
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="Pesquisar vídeos">
             <button id="searchButton">Pesquisar</button>
         </div>
-        <hr>
-        <h2>Assistir</h2>
         <div id="videoContainer" class="grid-container"></div>
     </div>
 
@@ -304,8 +347,16 @@
                 var errorCode = error.code;
                 var errorMessage = error.message;
                 console.error("Erro ao autenticar:", errorCode, errorMessage);
+
+                if (errorCode === 'auth/invalid-login-credentials') {
+                    document.getElementById('errorContainer').style.display = 'block';
+                } else {
+                    document.getElementById('errorContainer').style.display = 'none';
+                }
             });
         });
+
+
 
         document.getElementById('registerButton').addEventListener('click', function() {
             var username = document.getElementById('usernameInput').value;
@@ -314,7 +365,7 @@
             firebase.auth().createUserWithEmailAndPassword(username + '@example.com', password)
                 .then((userCredential) => {
                     console.log("Usuário registrado:", userCredential.user.uid);
-                  
+                
                     firebase.database().ref('users/' + userCredential.user.uid).set({
                         username: username
                     });
@@ -323,6 +374,12 @@
                     var errorCode = error.code;
                     var errorMessage = error.message;
                     console.error("Erro ao registrar:", errorCode, errorMessage);
+
+                    if (errorCode === 'auth/email-already-in-use') {
+                        document.getElementById('registerErrorContainer').style.display = 'block';
+                    } else {
+                        document.getElementById('registerErrorContainer').style.display = 'none';
+                    }
                 });
 
         });
@@ -403,6 +460,14 @@ document.addEventListener('click', function(event) {
 });
 
 
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            firebase.auth().signOut().then(function() {
+                console.log('Usuário deslogado com sucesso');
+                location.reload(); // Recarrega a página para atualizar a exibição
+            }).catch(function(error) {
+                console.error('Erro ao deslogar:', error);
+            });
+        });
 
 
         document.getElementById('searchButton').addEventListener('click', function() {
